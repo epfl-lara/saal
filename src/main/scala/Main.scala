@@ -5,49 +5,15 @@ import stainless.frontend.CallBack
 import stainless.frontends.dotc.*
 import stainless.{AbstractReport, MainHelpers, frontend, frontends}
 
+import java.io.File
+
 object Main {
-
-  val compilerFactory = new frontends.dotc.DottyCompiler.Factory(Nil, libPaths)
-
-  class ExtractionCallback extends CallBack {
-    var symbols: xt.Symbols = xt.NoSymbols
-    override def beginExtractions(): Unit = ()
-
-    override def apply(file: String,
-                       unit: xt.UnitDef,
-                       classes: Seq[xt.ClassDef],
-                       functions: Seq[xt.FunDef],
-                       typeDefs: Seq[xt.TypeDef]): Unit = {
-      symbols = symbols.withClasses(classes).withFunctions(functions).withTypeDefs(typeDefs)
-    }
-
-    override def failed(): Unit = ()
-
-    override def endExtractions(): Unit = ()
-
-    override def stop(): Unit = ()
-
-    override def join(): Unit = ()
-
-    override def getReport: Option[AbstractReport[_]] = None
-  }
-
-  def createContext: inox.Context = {
-    val reporter = new DefaultReporter(Set.empty)
-    inox.Context(reporter, new utils.InterruptManager(reporter))
-  }
-
   @main
   def theMain: Unit = {
-    val ctx = createContext
-    val args: Seq[String] = Seq("src/main/resources/HelloStainless.scala")
-    val cb = new ExtractionCallback
-    val front = compilerFactory(ctx, args, cb)
-    front.run()
-    front.join()
-    // cb.symbols contains all symbols, including the library
-    println(cb.symbols)
-    example(cb.symbols)
+    val symsWrapper = StainlessSymbols.extract(Seq(new File("src/main/resources/HelloStainless.scala")))
+    println("Symbols:")
+    println(symsWrapper.filtered.symbols)
+    example(symsWrapper.filtered.symbols)
   }
 
   def example(syms: xt.Symbols): Unit = {
